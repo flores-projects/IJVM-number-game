@@ -8,3 +8,5 @@ player 1's number, and "Invalid input" if the guessed number is out of bounds or
 If the player guesses the number, it will print a message acknowledging this, and the number of guesses it took. If the player takes too many
 guesses, it will print that the player lost, and display the correct number. Then it will ask if the player wishes to play again. If the player
 enters 'y' at this point, it will restart the program. If the player enters 'n', the program will end.
+
+This program was tested using the Mic1MMV Simulator, the zip file for the simulator is contained alongside this project.
