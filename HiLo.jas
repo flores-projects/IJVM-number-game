@@ -1,0 +1,685 @@
+// 
+//   HiLo.jas
+//
+//   Author
+//     Manny Flores
+//
+//   Description
+//     Takes an input number from player 1 and prompts a second player to try to guess that number, with a limit of
+//      10 guesses. Will prompt the player to play again if they would like.
+//
+.constant
+    OBJREF 100
+.end-constant
+
+.main
+        .var
+            num             //number player1 inputs
+            guesses         //number of guesses player2 has done
+            currentGuess    //the current guess of player2.
+            againAnswer     //stores the answer the player gives to the prompt "play again?"
+        .end-var
+
+input:  bipush 1            //set guesses back to 1.
+        istore guesses
+        ldc_w OBJREF
+        invokevirtual DisplayInputPrompt
+        pop
+
+        ldc_w OBJREF
+        invokevirtual GetNum
+        istore num
+
+        //if the input was invalid, go back and ask for it again.
+        //I know this wasn't necessary but I want to do it anyways!
+        iload num
+        bipush 1
+        iadd
+        ifeq start
+
+        //now player2 can guess! First prompt them to guess, then check that guess.
+guess:  ldc_w OBJREF
+        invokevirtual DisplayGuessPrompt
+        pop
+
+        ldc_w OBJREF
+        invokevirtual GetNum
+        istore currentGuess
+
+        //if the output is -1 (which is only possible for invalid inputs), print an error
+        iload currentGuess
+        bipush 1
+        iadd
+        ifeq error
+
+        //if equal, player 1 wins!
+        iload currentGuess
+        iload num
+        isub
+        ifeq correct
+
+        iload currentGuess
+        iload num
+        isub
+        iflt less
+
+        iload num
+        iload currentGuess
+        isub
+        iflt more
+
+less:   ldc_w OBJREF
+        invokevirtual TooSmall
+        pop
+        goto incorrect
+
+more:   ldc_w OBJREF
+        invokevirtual TooBig
+        pop
+        goto incorrect
+
+error:  ldc_w OBJREF
+        invokevirtual Invalid
+        pop
+        goto incorrect
+
+incorrect:
+        iload guesses
+        bipush -10
+        iadd
+        ifeq lose
+        iinc guesses 1
+        goto guess
+
+//Player 2 wins, load number of guesses to the pushed to the Win function
+correct:
+        ldc_w OBJREF
+        iload guesses
+        invokevirtual Win
+        pop
+        goto again
+
+//Player 1 wins, load input number to the pushed to the GameOver function
+lose:   ldc_w OBJREF
+        iload num
+        invokevirtual GameOver
+        pop
+
+//Prompt the user to input y/n to play again. If 'y' is entered, go back to start. If 'n' is entered, end program.
+//Otherwise, prompt the user again.
+again:  ldc_w OBJREF
+        invokevirtual PlayAgain
+        pop
+
+        ldc_w OBJREF
+        invokevirtual GetChar
+        istore againAnswer
+        iload againAnswer
+        bipush 'y'
+        isub
+        ifeq start
+        iload againAnswer
+        bipush 'n'
+        isub
+        ifeq stop
+        goto again
+
+stop:   halt
+
+//prints a new line then goes back to the top of the program.
+start:  bipush 10
+        out
+        goto input
+.end-main
+
+
+
+//get a 1 or 2 digit number from ascii text
+.method GetNum()
+        .var
+                 ch             //most recent input character
+                 outputNum      //number we will output.
+                 errorPresent   //If there is an error present, set this to 1.
+        .end-var
+        //set outputNum to 0
+        bipush 0
+        dup
+        istore outputNum
+        istore errorPresent
+
+        // Loop until a character is entered
+loop:   in
+        dup
+        ifeq clear
+        goto check
+clear:  pop                 //clear the stack and loop again, no input
+        goto loop
+check:  istore ch           //there is input! Now we must check for errors.
+
+        //FIRST CHECK - check to end. If the user presses enter, the number is considered complete and will
+        iload ch
+        bipush 10
+        isub
+        ifeq end            //if the user pressed enter, end the loop.
+
+        //SECOND CHECK - checks for non-numeric characters, anything outside of 0 - 9
+        iload ch
+        bipush '0'
+        isub
+        iflt error
+        bipush '9'
+        iload ch
+        isub
+        iflt error
+
+        //multiply the outputNum by 10, then add the numeric value of ch to it, then store to outputNum, then loop.
+        iload outputNum
+        dup
+        iadd                //stack now has 2 * outputNum on top of it
+        dup
+        dup
+        iadd                //stack now has 4 * outputNum and 2 * outputNum on it
+        dup                 //stack now has 4 * outputNum, 4 * outputNum, 2 * outputNum
+        iadd
+        iadd                //stack now has 10 * outputNum!
+        iload ch
+        bipush '0'
+        isub
+        iadd               //10 * outputNum + numeric value of ch
+        istore outputNum
+        goto loop
+
+//We have run into an invalid character! Oh no! Set errorPresent to 1 then loop again.
+error:
+        bipush 1
+        istore errorPresent
+        goto loop
+
+//check if there is an error present, then check for values out of range (0-99). Otherwise, everything is good!
+end:    iload errorPresent
+        bipush -1
+        iadd
+        ifeq enderr
+        iload outputNum
+        iflt enderr
+        bipush 99
+        iload outputNum
+        isub
+        iflt enderr
+        iload outputNum
+        ireturn
+
+
+// Any incorrect digits are -1.
+enderr:
+        bipush -1
+        istore outputNum
+        iload outputNum
+        ireturn
+
+.end-method
+
+//print out the ASCII of an input number n
+.method GetASCII(n)
+        .var
+            charOne             //First char of the number
+        .end-var
+
+        //0 > charOne & charTwo
+        bipush 0
+        istore charOne
+
+        //If n > 10, subtract 10 then store back to n, and add 1 to char1.
+loop:   iload n
+        bipush 10
+        isub
+        dup
+        iflt end
+
+        istore n
+
+        iload charOne
+        bipush 1
+        iadd
+        istore charOne
+        goto loop
+
+
+
+end:    pop
+
+        //If char1 is 0, we don't even want to print it, so jump straight to printing char2.
+        iload charOne
+        ifeq chTwo
+
+        bipush '0'
+        iload charOne
+        iadd
+        out
+
+chTwo:  bipush '0'
+        iload n
+        iadd
+        out
+        ireturn
+.end-method
+
+//Wait for the user to enter a character, then return that character when the user presses enter.
+.method GetChar()
+        .var
+                 ch             //most recent input character
+                 output         //most recent input character (that isn't enter)
+        .end-var
+loop:   in
+        dup
+        ifeq clear
+        goto check
+clear:  pop
+        goto loop
+check:  istore ch
+        iload ch
+        bipush 10
+        isub
+        ifeq end
+        iload ch
+        istore output
+        goto loop
+
+
+end:    iload output
+        ireturn
+.end-method
+
+//Down here are functions to display prompts on the output screen.
+.method DisplayInputPrompt()
+    bipush 'I'       // Display "Input a Number (0-99)"
+    out
+    bipush 'n'
+    out
+    bipush 'p'
+    out
+    bipush 'u'
+    out
+    bipush 't'
+    out
+    bipush 32
+    out
+    bipush 'a'
+    out
+    bipush 32
+    out
+    bipush 'N'
+    out
+    bipush 'u'
+    out
+    bipush 'm'
+    out
+    bipush 'b'
+    out
+    bipush 'e'
+    out
+    bipush 'r'
+    out
+    bipush 32
+    out
+    bipush '('
+    out
+    bipush '0'
+    out
+    bipush '-'
+    out
+    bipush '9'
+    out
+    bipush '9'
+    out
+    bipush ')'
+    out
+    ireturn
+.end-method
+
+.method DisplayGuessPrompt()
+    bipush 10       // go to next line
+    out
+    bipush 'G'       // Display "Guess a Number (0-99)"
+    out
+    bipush 'u'
+    out
+    bipush 'e'
+    out
+    bipush 's'
+    out
+    bipush 's'
+    out
+    bipush 32
+    out
+    bipush 'a'
+    out
+    bipush 32
+    out
+    bipush 'N'
+    out
+    bipush 'u'
+    out
+    bipush 'm'
+    out
+    bipush 'b'
+    out
+    bipush 'e'
+    out
+    bipush 'r'
+    out
+    bipush 32
+    out
+    bipush '('
+    out
+    bipush '0'
+    out
+    bipush '-'
+    out
+    bipush '9'
+    out
+    bipush '9'
+    out
+    bipush ')'
+    out
+    ireturn
+.end-method
+
+.method TooBig()
+    bipush 10       // go to next line
+    out
+    bipush 'T'       // Display "Too big."
+    out
+    bipush 'o'
+    out
+    bipush 'o'
+    out
+    bipush 32
+    out
+    bipush 'b'
+    out
+    bipush 'i'
+    out
+    bipush 'g'
+    out
+    bipush '.'
+    out
+    ireturn
+.end-method
+
+.method TooSmall()
+    bipush 10       // go to next line
+    out
+    bipush 'T'       // Display "Too small."
+    out
+    bipush 'o'
+    out
+    bipush 'o'
+    out
+    bipush 32
+    out
+    bipush 's'
+    out
+    bipush 'm'
+    out
+    bipush 'a'
+    out
+    bipush 'l'
+    out
+    bipush 'l'
+    out
+    bipush '.'
+    out
+    ireturn
+.end-method
+
+.method Invalid()
+    bipush 10       // go to next line
+    out
+    bipush 'I'       // Display "Invalid input."
+    out
+    bipush 'n'
+    out
+    bipush 'v'
+    out
+    bipush 'a'
+    out
+    bipush 'l'
+    out
+    bipush 'i'
+    out
+    bipush 'd'
+    out
+    bipush 32
+    out
+    bipush 'i'
+    out
+    bipush 'n'
+    out
+    bipush 'p'
+    out
+    bipush 'u'
+    out
+    bipush 't'
+    out
+    bipush '.'
+    out
+    ireturn
+.end-method
+
+//Player 1 wins, print the original input number with the message (n)
+.method GameOver(n)
+    bipush 10       // go to next line
+    out
+    bipush 'G'       // Display "Game over. Player 1 wins. Correct answer is [n]."
+    out
+    bipush 'a'
+    out
+    bipush 'm'
+    out
+    bipush 'e'
+    out
+    bipush 32
+    out
+    bipush 'o'
+    out
+    bipush 'v'
+    out
+    bipush 'e'
+    out
+    bipush 'r'
+    out
+    bipush '.'
+    out
+    bipush 32
+    out
+    bipush 'P'
+    out
+    bipush 'l'
+    out
+    bipush 'a'
+    out
+    bipush 'y'
+    out
+    bipush 'e'
+    out
+    bipush 'r'
+    out
+    bipush 32
+    out
+    bipush 'o'
+    out
+    bipush 'n'
+    out
+    bipush 'e'
+    out
+    bipush 32
+    out
+    bipush 'w'
+    out
+    bipush 'i'
+    out
+    bipush 'n'
+    out
+    bipush 's'
+    out
+    bipush '.'
+    out
+    bipush 32
+    out
+    bipush 'C'
+    out
+    bipush 'o'
+    out
+    bipush 'r'
+    out
+    bipush 'r'
+    out
+    bipush 'e'
+    out
+    bipush 'c'
+    out
+    bipush 't'
+    out
+    bipush 32
+    out
+    bipush 'a'
+    out
+    bipush 'n'
+    out
+    bipush 's'
+    out
+    bipush 'w'
+    out
+    bipush 'e'
+    out
+    bipush 'r'
+    out
+    bipush 32
+    out
+    bipush 'i'
+    out
+    bipush 's'
+    out
+    bipush 32
+    out
+
+    //Call GetASCII to print the correct answer.
+    ldc_w OBJREF
+    iload n
+    invokevirtual GetASCII
+    pop
+
+    bipush '.'
+    out
+    ireturn
+.end-method
+
+//Player 2 wins, print how many guesses you took along with the message.
+.method Win(n)
+    bipush 10       // go to next line
+    out
+    bipush 'Y'       // Display "You win! You took [n] guesses."
+    out
+    bipush 'o'
+    out
+    bipush 'u'
+    out
+    bipush 32
+    out
+    bipush 'w'
+    out
+    bipush 'i'
+    out
+    bipush 'n'
+    out
+    bipush '!'
+    out
+    bipush 32
+    out
+    bipush 'Y'
+    out
+    bipush 'o'
+    out
+    bipush 'u'
+    out
+    bipush 32
+    out
+    bipush 'T'
+    out
+    bipush 'o'
+    out
+    bipush 'o'
+    out
+    bipush 'k'
+    out
+    bipush 32
+    out
+
+    //Call GetASCII to print the guess number.
+    ldc_w OBJREF
+    iload n
+    invokevirtual GetASCII
+    pop
+
+    bipush 32
+    out
+    bipush 'g'
+    out
+    bipush 'u'
+    out
+    bipush 'e'
+    out
+    bipush 's'
+    out
+    bipush 's'
+    out
+    bipush 'e'
+    out
+    bipush 's'
+    out
+    bipush '.'
+    out
+    ireturn
+.end-method
+
+//Print the play again prompt
+.method PlayAgain(n)
+    bipush 10       // go to next line
+    out
+    bipush 'P'       // Display "Play again? (y/n)."
+    out
+    bipush 'l'
+    out
+    bipush 'a'
+    out
+    bipush 'y'
+    out
+    bipush 32
+    out
+    bipush 'a'
+    out
+    bipush 'g'
+    out
+    bipush 'a'
+    out
+    bipush 'i'
+    out
+    bipush 'n'
+    out
+    bipush '?'
+    out
+    bipush 32
+    out
+    bipush '('
+    out
+    bipush 'y'
+    out
+    bipush '/'
+    out
+    bipush 'n'
+    out
+    bipush ')'
+    out
+    ireturn
+.end-method
