@@ -1,4 +1,4 @@
-Hi-Lo Guessing Game Project, created by Manny Flores
+Hi-Lo Guessing Game Project, created by Jose M Flores
 
 This project is written in IJVM Machine code, and consists of a game between two players. The first player must enter a number between 0 and 99,
 then the second player must take up to ten guesses to guess that number (NOTE: ensure you delete the number from the input console, otherwise
