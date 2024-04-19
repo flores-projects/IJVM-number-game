@@ -9,4 +9,4 @@ If the player guesses the number, it will print a message acknowledging this, an
 guesses, it will print that the player lost, and display the correct number. Then it will ask if the player wishes to play again. If the player
 enters 'y' at this point, it will restart the program. If the player enters 'n', the program will end.
 
-This program was tested using the Mic1MMV Simulator, the zip file for the simulator is contained alongside this project, but it can also be downloaded online.
+This program was tested on and designed for the Mic1MMV Simulator, the zip file for the simulator is contained alongside this project, but it can also be downloaded online.
